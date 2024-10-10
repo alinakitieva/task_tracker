@@ -1,5 +1,7 @@
 # Task Tracker CLI
 
+Python sample solution for the [task-tracker](https://roadmap.sh/projects/task-tracker) challenge from [roadmap.sh](https://roadmap.sh/).
+
 Task Tracker CLI is a command-line tool to manage your daily tasks. It allows you to add, update, delete, mark tasks with statuses (e.g., "in-progress", "done"), and filter tasks by their current status.
 
 ## Features
