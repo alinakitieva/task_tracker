@@ -1,14 +1,21 @@
 import json
 import os
 from datetime import datetime
+import uuid
 
 
 class Task:
-    def __init__(self, task_id, description, status="todo", createdAt=None, updatedAt=None):
+    """
+    Represents a task with an ID, description, status, and timestamps.
+    """
+
+    def __init__(
+        self, task_id, description, status="todo", createdAt=None, updatedAt=None
+    ):
         self.task_id = task_id
         self.description = description
         self.status = status
-        self.createdAt = createdAt or datetime.now().isoformat()
+        self.createdAt = createdAt or datetime.now()
         self.updatedAt = updatedAt or self.createdAt
 
     def update_description(self, new_description):
@@ -24,8 +31,8 @@ class Task:
             "task_id": self.task_id,
             "description": self.description,
             "status": self.status,
-            "createdAt": self.createdAt,
-            "updatedAt": self.updatedAt,
+            "createdAt": self.createdAt.isoformat(),
+            "updatedAt": self.updatedAt.isoformat(),
         }
 
 
@@ -41,7 +48,14 @@ class TaskManager:
             try:
                 task_dicts = json.load(file)
                 return [
-                    Task(**task) for task in task_dicts
+                    Task(
+                        task_id=task["task_id"],
+                        description=task["description"],
+                        status=task["status"],
+                        createdAt=datetime.fromisoformat(task["createdAt"]),
+                        updatedAt=datetime.fromisoformat(task["updatedAt"]),
+                    )
+                    for task in task_dicts
                 ]
             except json.JSONDecodeError:
                 return []
@@ -50,14 +64,14 @@ class TaskManager:
         with open(self.file_name, "w") as file:
             json.dump([task.to_dict() for task in self.tasks], file, indent=4)
 
-    def add_task(self, description):
-        task_id = max([task.task_id for task in self.tasks], default=0) + 1
+    def add_task(self, description: str) -> None:
+        task_id = str(uuid.uuid4())
         new_task = Task(task_id, description)
         self.tasks.append(new_task)
         self.save_tasks()
         print(f"Task added successfully (ID: {task_id})")
 
-    def update_task(self, task_id, new_description):
+    def update_task(self, task_id: int, new_description: str) -> None:
         for task in self.tasks:
             if task.task_id == task_id:
                 task.update_description(new_description)
@@ -66,12 +80,16 @@ class TaskManager:
                 return
         print(f"Task with ID {task_id} not found.")
 
-    def delete_task(self, task_id):
+    def delete_task(self, task_id: int) -> None:
+        initial_length = len(self.tasks)
         self.tasks = [task for task in self.tasks if task.task_id != task_id]
-        self.save_tasks()
-        print(f"Task deleted successfully (ID: {task_id})")
+        if len(self.tasks) < initial_length:
+            self.save_tasks()
+            print(f"Task deleted successfully (ID: {task_id})")
+        else:
+            print(f"Task with ID {task_id} not found.")
 
-    def mark_task(self, task_id, status):
+    def mark_task(self, task_id: int, status: str) -> None:
         for task in self.tasks:
             if task.task_id == task_id:
                 task.update_status(status)
@@ -88,12 +106,13 @@ class TaskManager:
         )
         for task in sorted(tasks, key=lambda x: x.createdAt):
             color = self.get_status_color(task.status)
+            reset_color = "\033[0m"
             print(
                 f"{color}ID: {task.task_id}, Description: {task.description}, Status: {task.status}, "
-                f"Created At: {task.createdAt}, Updated At: {task.updatedAt}"
+                f"Created At: {task.createdAt}, Updated At: {task.updatedAt}{reset_color}"
             )
 
-    def get_status_color(self, status):
+    def get_status_color(self, status: str) -> str:
         if status == "todo":
             return "\033[94m"  # Blue for 'todo'
         elif status == "in-progress":
@@ -101,4 +120,3 @@ class TaskManager:
         elif status == "done":
             return "\033[92m"  # Green for 'done'
         return "\033[0m"  # Default color
-
